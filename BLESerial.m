@@ -29,6 +29,11 @@
 	[self.centralManager stopScan];
 }
 
+- (void)connectPeripheral:(CBPeripheral*)peripheral
+{
+	[self.centralManager connectPeripheral:peripheral options:nil];
+}
+
 // 找到设备委托方法. 注意这里每找到一个设备就会被调用  
 - (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(CBPeripheral *)peripheral advertisementData:(NSDictionary *)advertisementData RSSI:(NSNumber *)RSSI  
 {  
@@ -37,11 +42,7 @@
     // Ok, it's in range - have we already seen it?  
     if (self.discoveredPeripheral != peripheral) {  
         // Save a local copy of the peripheral, so CoreBluetooth doesn't get rid of it  
-        self.discoveredPeripheral = peripheral;  
-          
-        // And connect  
-        NSLog(@"Connecting to peripheral %@", peripheral);  
-        [self.centralManager connectPeripheral:peripheral options:nil];  
+        self.discoveredPeripheral = peripheral;
     }  
 }  
 
@@ -50,7 +51,7 @@
     NSLog(@"Failed to connect to %@. (%@)", peripheral, [error localizedDescription]);
 }
 
-// 已经连接通知
+// 已经连接通知, 但并不直接通知上层, 而是等到找到指定的Characteristics才通知
 - (void)centralManager:(CBCentralManager *)central didConnectPeripheral:(CBPeripheral *)peripheral
 {
     NSLog(@"Peripheral Connected");
@@ -93,6 +94,8 @@
         if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:kTRANSFER_CHARACTERISTIC_UUID]]) {
             // If it is, subscribe to it
             [peripheral setNotifyValue:YES forCharacteristic:characteristic];
+			
+			[self.delegate didConnectPeripheral:peripheral];
         }
     }
     
